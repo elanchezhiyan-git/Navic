@@ -105,6 +105,7 @@ import paige.navic.utils.UiState
 import paige.navic.utils.shimmerLoading
 import paige.navic.utils.toHoursMinutesSeconds
 import paige.subsonic.api.models.Album
+import paige.subsonic.api.models.LocalTrackCollection
 import paige.subsonic.api.models.Playlist
 import paige.subsonic.api.models.Track
 import paige.subsonic.api.models.TrackCollection
@@ -452,6 +453,7 @@ private fun TracksScreenScope.Metadata() {
 		val subtitle = when (tracks) {
 			is Album -> tracks.subtitle ?: stringResource(Res.string.info_unknown_artist)
 			is Playlist -> tracks.subtitle
+			is LocalTrackCollection -> TODO()
 		}
 		subtitle?.let { subtitle ->
 			Text(
