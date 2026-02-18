@@ -39,11 +39,7 @@ class LoginViewModel : ViewModel() {
 			_loginState.value = LoginState.Loading
 			_loginState.value = try {
 				SessionManager.login(
-					instanceState.text.toString().let {
-						if (!it.startsWith("https://") && !it.startsWith("http://"))
-							"https://$it"
-						else it
-					},
+					normalizeInstanceUrl(instanceState.text.toString()),
 					usernameState.text.toString(),
 					passwordState.text.toString()
 				)
@@ -55,6 +51,29 @@ class LoginViewModel : ViewModel() {
 			} catch (e: Exception) {
 				LoginState.Error(e)
 			}
+		}
+	}
+
+	private fun normalizeInstanceUrl(rawValue: String): String {
+		val value = rawValue.trim().removeSuffix("/")
+		if (value.startsWith("https://") || value.startsWith("http://")) {
+			return value
+		}
+
+		val host = value.substringBefore('/').substringBefore(':').lowercase()
+		val isLocalHost =
+			host == "localhost" ||
+			host == "127.0.0.1" ||
+			host == "::1" ||
+			host.endsWith(".local") ||
+			host.startsWith("10.") ||
+			host.startsWith("192.168.") ||
+			host.matches(Regex("^172\\.(1[6-9]|2\\d|3[0-1])\\..*"))
+
+		return if (isLocalHost) {
+			"http://$value"
+		} else {
+			"https://$value"
 		}
 	}
 

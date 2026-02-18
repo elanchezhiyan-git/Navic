@@ -214,15 +214,19 @@ class AndroidMediaPlayerViewModel(
 
 		viewModelScope.launch(Dispatchers.IO) {
 			val mediaItems = tracks.tracks.map { track ->
+				val isLocalUri = track.id.startsWith("content://") || track.id.startsWith("file://")
 				val metadata = MediaMetadata.Builder()
 					.setTitle(track.title)
 					.setArtist(track.artist)
 					.setAlbumTitle(track.album)
-					.setArtworkUri(SessionManager.api.getCoverArtUrl(track.coverArt, auth = true)?.toUri())
+					.setArtworkUri(
+						if (isLocalUri) track.coverArt?.toUri()
+						else SessionManager.api.getCoverArtUrl(track.coverArt, auth = true)?.toUri()
+					)
 					.build()
 
 				MediaItem.Builder()
-					.setUri(SessionManager.api.streamUrl(track.id))
+					.setUri(if (isLocalUri) track.id else SessionManager.api.streamUrl(track.id))
 					.setMediaId(track.id)
 					.setMediaMetadata(metadata)
 					.build()
@@ -239,6 +243,18 @@ class AndroidMediaPlayerViewModel(
 	}
 
 	override fun playSingle(track: Track) {
+		if (track.id.startsWith("content://") || track.id.startsWith("file://")) {
+			play(
+				paige.subsonic.api.models.LocalTrackCollection(
+					tracks = listOf(track),
+					title = "Local track",
+					trackCount = 1
+				),
+				0
+			)
+			return
+		}
+
 		viewModelScope.launch {
 			runCatching {
 				val albumResponse = SessionManager.api.getAlbum(track.albumId.toString())
