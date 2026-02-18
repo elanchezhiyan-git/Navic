@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import paige.navic.MainActivity
+import paige.navic.data.models.LocalFolder
 import paige.subsonic.api.models.Track
 
 actual object LocalLibraryProvider {
@@ -27,7 +28,8 @@ actual object LocalLibraryProvider {
 			MediaStore.Audio.Media.ARTIST,
 			MediaStore.Audio.Media.ALBUM,
 			MediaStore.Audio.Media.DURATION,
-			MediaStore.Audio.Media.MIME_TYPE
+			MediaStore.Audio.Media.MIME_TYPE,
+			MediaStore.Audio.Media.RELATIVE_PATH
 		)
 		val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
 		val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
@@ -46,6 +48,7 @@ actual object LocalLibraryProvider {
 				val albumIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
 				val durationIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
 				val mimeTypeIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
+				val relativePathIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.RELATIVE_PATH)
 
 				buildList {
 					while (cursor.moveToNext()) {
@@ -55,6 +58,7 @@ actual object LocalLibraryProvider {
 						val album = cursor.getString(albumIndex)
 						val durationMs = cursor.getLong(durationIndex)
 						val mimeType = cursor.getString(mimeTypeIndex)
+						val relativePath = cursor.getString(relativePathIndex)?.trim('/')
 						val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 							.buildUpon()
 							.appendPath(id.toString())
@@ -81,7 +85,7 @@ actual object LocalLibraryProvider {
 								bitDepth = null,
 								samplingRate = null,
 								channelCount = null,
-								path = uri.toString(),
+								path = relativePath,
 								isVideo = false,
 								userRating = null,
 								averageRating = null,
@@ -118,5 +122,47 @@ actual object LocalLibraryProvider {
 				}
 			} ?: emptyList()
 		}.getOrElse { emptyList() }
+	}
+
+	actual suspend fun getFolders(parentPath: String?): List<LocalFolder> {
+		val tracks = getTracks()
+		val grouped = mutableMapOf<String, MutableList<Track>>()
+		for (track in tracks) {
+			val path = track.path?.trim('/').orEmpty()
+			if (path.isBlank()) continue
+			val parts = path.split('/').filter { it.isNotBlank() }
+			if (parts.isEmpty()) continue
+
+			if (parentPath.isNullOrBlank()) {
+				val key = parts.first()
+				grouped.getOrPut(key) { mutableListOf() }.add(track)
+			} else {
+				val parentParts = parentPath.trim('/').split('/').filter { it.isNotBlank() }
+				if (parts.size <= parentParts.size) continue
+				if (parts.take(parentParts.size) != parentParts) continue
+				val keyParts = parentParts + parts[parentParts.size]
+				val key = keyParts.joinToString("/")
+				grouped.getOrPut(key) { mutableListOf() }.add(track)
+			}
+		}
+
+		return grouped.entries
+			.map { (path, list) ->
+				LocalFolder(
+					path = path,
+					name = path.substringAfterLast('/'),
+					trackCount = list.size
+				)
+			}
+			.sortedBy { it.name.lowercase() }
+	}
+
+	actual suspend fun getTracksInFolder(folderPath: String): List<Track> {
+		val base = folderPath.trim('/')
+		if (base.isBlank()) return emptyList()
+		return getTracks().filter {
+			val path = it.path?.trim('/').orEmpty()
+			path == base || path.startsWith("$base/")
+		}
 	}
 }

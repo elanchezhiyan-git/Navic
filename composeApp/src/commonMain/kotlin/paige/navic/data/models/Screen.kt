@@ -31,6 +31,7 @@ sealed interface Screen : NavKey {
 	@Serializable data object Player : NavKey
 	@Serializable data object Lyrics : NavKey
 	@Serializable data class Tracks(val partialCollection: TrackCollection) : NavKey
+	@Serializable data class LocalFolders(val path: String? = null, val title: String = "Local Library") : NavKey
 	@Serializable data class TrackInfo(val track: Track) : NavKey
 	@Serializable data object Search : NavKey
 	@Serializable data class Artist(val artist: String) : NavKey

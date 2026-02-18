@@ -30,7 +30,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +56,6 @@ import paige.navic.LocalContentPadding
 import paige.navic.LocalCtx
 import paige.navic.LocalNavStack
 import paige.navic.data.models.Screen
-import paige.navic.data.repositories.LocalLibraryProvider
 import paige.navic.data.session.SessionManager
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.History
@@ -76,9 +74,7 @@ import paige.navic.ui.viewmodels.ArtistsViewModel
 import paige.navic.ui.viewmodels.PlaylistsViewModel
 import paige.navic.utils.UiState
 import paige.subsonic.api.models.ListType
-import paige.subsonic.api.models.LocalTrackCollection
 import kotlin.time.Duration
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +102,6 @@ fun LibraryScreen(
 	val ctx = LocalCtx.current
 	val backStack = LocalNavStack.current
 	val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-	val scope = rememberCoroutineScope()
 
 	Scaffold(
 		topBar = { RootTopBar({ Text(stringResource(Res.string.title_library)) }, scrollBehavior) },
@@ -174,19 +169,8 @@ fun LibraryScreen(
 								.padding(horizontal = 16.dp, vertical = 8.dp),
 							onClick = {
 								ctx.clickSound()
-								scope.launch {
-									val tracks = LocalLibraryProvider.getTracks()
-									if (tracks.isNotEmpty()) {
-										backStack.add(
-											Screen.Tracks(
-												LocalTrackCollection(
-													title = "Local Library",
-													trackCount = tracks.size,
-													tracks = tracks
-												)
-											)
-										)
-									}
+								if (backStack.lastOrNull() !is Screen.LocalFolders) {
+									backStack.add(Screen.LocalFolders())
 								}
 							}
 						) {

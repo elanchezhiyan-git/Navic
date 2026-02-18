@@ -66,6 +66,7 @@ import paige.navic.ui.screens.ArtistScreen
 import paige.navic.ui.screens.ArtistsScreen
 import paige.navic.ui.screens.CreatePlaylistScreen
 import paige.navic.ui.screens.LibraryScreen
+import paige.navic.ui.screens.LocalFoldersScreen
 import paige.navic.ui.screens.LyricsScreen
 import paige.navic.ui.screens.PlayerScreen
 import paige.navic.ui.screens.PlaylistsScreen
@@ -100,6 +101,7 @@ private val config = SavedStateConfiguration {
 			subclass(Screen.Lyrics::class, Screen.Lyrics.serializer())
 			subclass(Screen.Search::class, Screen.Search.serializer())
 			subclass(Screen.Tracks::class, Screen.Tracks.serializer())
+			subclass(Screen.LocalFolders::class, Screen.LocalFolders.serializer())
 			subclass(Screen.TrackInfo::class, Screen.TrackInfo.serializer())
 			subclass(Screen.Artist::class, Screen.Artist.serializer())
 			subclass(Screen.AddToPlaylist::class, Screen.AddToPlaylist.serializer())
@@ -243,6 +245,9 @@ private fun entryProvider(
 		}
 		entry<Screen.Tracks>(metadata = detailPane("root")) { key ->
 			TracksScreen(key.partialCollection)
+		}
+		entry<Screen.LocalFolders>(metadata = detailPane("root")) { key ->
+			LocalFoldersScreen(key.path, key.title)
 		}
 		entry<Screen.TrackInfo> { key ->
 			TrackInfoScreen(key.track)

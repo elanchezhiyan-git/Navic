@@ -139,6 +139,7 @@ fun TracksScreen(
 
 	val albumInfoState by viewModel.albumInfoState.collectAsState()
 	val starredState by viewModel.starredState.collectAsState()
+	val isLocalCollection = (tracks as? UiState.Success)?.data is LocalTrackCollection
 
 	Scaffold(
 		topBar = {
@@ -188,7 +189,7 @@ fun TracksScreen(
 							text = { Text(stringResource(Res.string.action_share)) },
 							leadingIcon = { Icon(Icons.Outlined.Share, null) },
 							containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-							enabled = tracks is UiState.Success,
+							enabled = tracks is UiState.Success && !isLocalCollection,
 							onClick = {
 								expanded = false
 								shareId = (tracks as? UiState.Success)?.data?.id
@@ -198,7 +199,7 @@ fun TracksScreen(
 							text = { Text(stringResource(Res.string.action_add_all_to_playlist)) },
 							leadingIcon = { Icon(Icons.Outlined.PlaylistAdd, null) },
 							containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-							enabled = tracks is UiState.Success,
+							enabled = tracks is UiState.Success && !isLocalCollection,
 							onClick = {
 								expanded = false
 								if (backStack.lastOrNull() !is Screen.AddToPlaylist) {
@@ -309,7 +310,7 @@ fun TracksScreen(
 												text = { Text(stringResource(Res.string.action_share)) },
 												leadingIcon = { Icon(Icons.Outlined.Share, null) },
 												onClick = {
-													shareId = track.id
+													if (!isLocalCollection) shareId = track.id
 													viewModel.clearSelection()
 												},
 											)
