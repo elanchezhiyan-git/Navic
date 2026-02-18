@@ -11,6 +11,7 @@ import paige.navic.data.session.SessionManager
 import paige.navic.utils.UiState
 import paige.subsonic.api.models.Album
 import paige.subsonic.api.models.AlbumInfo
+import paige.subsonic.api.models.LocalTrackCollection
 import paige.subsonic.api.models.Track
 import paige.subsonic.api.models.TrackCollection
 
@@ -51,14 +52,17 @@ class TracksViewModel(
 			} catch (e: Exception) {
 				_tracksState.value = UiState.Error(e)
 			}
-			try {
-				val albumInfo = repository.getAlbumInfo(
-					(_tracksState.value as UiState.Success).data as Album
-				)
-				_albumInfoState.value = UiState.Success(albumInfo)
-			} catch (e: Exception) {
-				e.printStackTrace()
-				_albumInfoState.value = UiState.Error(e)
+			val loaded = (_tracksState.value as? UiState.Success)?.data
+			if (loaded is Album) {
+				try {
+					val albumInfo = repository.getAlbumInfo(loaded)
+					_albumInfoState.value = UiState.Success(albumInfo)
+				} catch (e: Exception) {
+					e.printStackTrace()
+					_albumInfoState.value = UiState.Error(e)
+				}
+			} else {
+				_albumInfoState.value = UiState.Error(Exception("No album info for this source"))
 			}
 		}
 	}
@@ -69,6 +73,10 @@ class TracksViewModel(
 			_selectedIndex.value = index
 			_starredState.value = UiState.Loading
 			_albumInfoState.value = UiState.Loading
+			if (partialCollection is LocalTrackCollection) {
+				_starredState.value = UiState.Success(false)
+				return@launch
+			}
 			try {
 				val isStarred = repository.isTrackStarred(track)
 				_starredState.value = UiState.Success(isStarred ?: false)

@@ -4,6 +4,7 @@ import paige.navic.data.session.SessionManager
 import paige.subsonic.api.models.Album
 import paige.subsonic.api.models.AlbumInfo
 import paige.subsonic.api.models.Playlist
+import paige.subsonic.api.models.LocalTrackCollection
 import paige.subsonic.api.models.Track
 import paige.subsonic.api.models.TrackCollection
 
@@ -16,6 +17,7 @@ class TracksRepository {
 			is Playlist -> SessionManager.api.getPlaylist(collection.id).data.playlist.copy(
 				coverArt = SessionManager.api.getCoverArtUrl(collection.id, auth = true)
 			)
+			is LocalTrackCollection -> collection
 		}
 	}
 
