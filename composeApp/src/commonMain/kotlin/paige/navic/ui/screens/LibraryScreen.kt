@@ -30,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +49,7 @@ import navic.composeapp.generated.resources.option_sort_recent
 import navic.composeapp.generated.resources.option_sort_starred
 import navic.composeapp.generated.resources.title_artists
 import navic.composeapp.generated.resources.title_library
+import navic.composeapp.generated.resources.title_songs
 import navic.composeapp.generated.resources.title_playlists
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -55,6 +57,7 @@ import paige.navic.LocalContentPadding
 import paige.navic.LocalCtx
 import paige.navic.LocalNavStack
 import paige.navic.data.models.Screen
+import paige.navic.data.repositories.LocalLibraryProvider
 import paige.navic.data.session.SessionManager
 import paige.navic.icons.Icons
 import paige.navic.icons.outlined.History
@@ -73,7 +76,9 @@ import paige.navic.ui.viewmodels.ArtistsViewModel
 import paige.navic.ui.viewmodels.PlaylistsViewModel
 import paige.navic.utils.UiState
 import paige.subsonic.api.models.ListType
+import paige.subsonic.api.models.LocalTrackCollection
 import kotlin.time.Duration
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -98,7 +103,10 @@ fun LibraryScreen(
 	var shareExpiry by remember { mutableStateOf<Duration?>(null) }
 	var deletionId by remember { mutableStateOf<String?>(null) }
 	val isLoggedIn by SessionManager.isLoggedIn.collectAsState()
+	val ctx = LocalCtx.current
+	val backStack = LocalNavStack.current
 	val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+	val scope = rememberCoroutineScope()
 
 	Scaffold(
 		topBar = { RootTopBar({ Text(stringResource(Res.string.title_library)) }, scrollBehavior) },
@@ -158,6 +166,32 @@ fun LibraryScreen(
 							color = MaterialTheme.colorScheme.onSurfaceVariant,
 							modifier = Modifier.padding(horizontal = 16.dp)
 						)
+					}
+					item(span = { GridItemSpan(maxLineSpan) }) {
+						Button(
+							modifier = Modifier
+								.fillMaxWidth()
+								.padding(horizontal = 16.dp, vertical = 8.dp),
+							onClick = {
+								ctx.clickSound()
+								scope.launch {
+									val tracks = LocalLibraryProvider.getTracks()
+									if (tracks.isNotEmpty()) {
+										backStack.add(
+											Screen.Tracks(
+												LocalTrackCollection(
+													title = "Local Library",
+													trackCount = tracks.size,
+													tracks = tracks
+												)
+											)
+										)
+									}
+								}
+							}
+						) {
+							Text(stringResource(Res.string.title_songs))
+						}
 					}
 				} else {
 					horizontalSection(
